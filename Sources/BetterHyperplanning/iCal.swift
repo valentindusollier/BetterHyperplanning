@@ -41,6 +41,10 @@ func format(summary: String) -> (code: String, title: String, type: String, isCa
     let code = String(summary.prefix(upTo: range1.lowerBound))
     summary = String(summary.suffix(from: range1.upperBound))
     
+    if !code.isSubjectCode() {
+        return nil
+    }
+    
     guard let range2 = summary.range(of: " - ", options: .backwards) else {
         return nil
     }

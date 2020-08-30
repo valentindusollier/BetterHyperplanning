@@ -1,0 +1,128 @@
+<html>
+    <head>
+        <title>BetterHyperplanning</title>
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <script>
+            var remoteServer = "http://localhost:8000/";
+            var url = null
+            var subjects = null
+            
+            function encodeHTMLEntities(text) {
+              return text.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+                 return '&#'+i.charCodeAt(0)+';';
+              });
+            }
+            
+            function updateSubjects() {
+                document.getElementById("spinner").hidden = false
+                document.getElementById("container.subjects").hidden = true
+                document.getElementById("container.subjects.name").hidden = true
+                document.getElementById("generate.button").disabled = true
+                subjects = null
+                
+                url = document.getElementById('url').value
+                
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() {
+                  if (this.readyState == 4) {
+                      if (this.status == 200) {
+                          subjects = JSON.parse(this.responseText);
+                          
+                          document.getElementById("subjects").innerHTML = ""
+                          document.getElementById("subjects.name").innerHTML = ""
+                          for (var code in subjects) {
+                              document.getElementById("subjects").innerHTML += "<li class=\"w3-display-container\"><input id=\"" + code + ".checkbox\" class=\"w3-check\" type=\"checkbox\" checked=\"checked\"><label>" + subjects[code] + "</label></li>"
+                              document.getElementById("subjects.name").innerHTML += "<li class=\"w3-display-container\"><label>" + subjects[code] + "</label><input id=\"" + code + ".name\" class=\"w3-input\" type=\"text\" placeholder=\"Nouveau nom\"></li>"
+                          }
+                          document.getElementById("container.subjects").hidden = false
+                          document.getElementById("container.subjects.name").hidden = false
+                          document.getElementById("generate.button").disabled = false
+                      }
+                      document.getElementById("spinner").hidden = true
+                  }
+                };
+                xmlhttp.open("GET", remoteServer + "subjects/?url=" + escape(url), true);
+                xmlhttp.send();
+            }
+        
+            function setupModal() {
+                var ignore = []
+                var subjectsName = {}
+                
+                for (var code in subjects) {
+                    if (!document.getElementById(code + ".checkbox").checked) {
+                        ignore.push(code)
+                    }
+                    
+                    if (document.getElementById(code + ".name").value != "") {
+                        subjectsName[code] = encodeHTMLEntities(document.getElementById(code + ".name").value)
+                    }
+                }
+                
+                var subscribedURL = remoteServer + "?url=" + escape(url) + (ignore.length != 0 ? "&ignore=" + escape(JSON.stringify(ignore)) : "") + (Object.keys(subjectsName).length != 0 ? "&subjects=" + escape(JSON.stringify(subjectsName)) : "")
+                
+                document.getElementById("output.url").value = subscribedURL
+                document.getElementById("modal").style.display = "block"
+            }
+        </script>
+    </head>
+    <body>
+        
+        <div class="w3-bar w3-border w3-light-grey w3-large">
+          <a class="w3-bar-item">BetterHyperplanning</a>
+          <button id="generate.button" class="w3-bar-item w3-button w3-green w3-right" onclick="setupModal()" disabled>G&eacute;n&eacute;rer l'URL</button>
+        </div>
+        
+        <div class="w3-container w3-animate-opacity">
+          <p>Placez ici l'URL iCal trouvable sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning de l'UMONS</a>.</p>
+          <div class="w3-container w3-card-4 w3-padding-16">
+              <label>URL</label>
+              <input id="url" class="w3-input" type="text" onchange="updateSubjects();" onkeyup="if (event.keyCode == 13) {this.onchange();}" onpaste="this.onchange();">
+          </div>
+          <p class="w3-small">Appuyez sur "Entrer" pour charger.</p>
+        </div>
+        
+        <div id="spinner" class="w3-container w3-center w3-padding-64" hidden>
+            <i class="fa fa-spinner w3-spin" style="font-size:32px"></i>
+        </div>
+        
+        <div id="container.subjects" class="w3-container w3-animate-opacity" hidden>
+          <h2>Cours</h2>
+          <p>S&eacute;l&eacute;ctionnez les cours auxquels vous participez.</p>
+          <ul id="subjects" class="w3-ul w3-card-4">
+            <li class="w3-display-container">
+                <input class="w3-check" type="checkbox" checked="checked">
+                <label>Subject</label>
+            </li>
+          </ul>
+        </div>
+        
+        <div id="container.subjects.name" class="w3-container w3-animate-opacity w3-margin-bottom" hidden>
+          <h2>Nom des cours</h2>
+          <p>Choissisez le nom de chaque cours.</p>
+          <ul id="subjects.name" class="w3-ul w3-card-4">
+            <li class="w3-display-container">
+                <label>Subject name</label>
+                <input class="w3-input" type="text" placeholder="Nouveau nom">
+            </li>
+          </ul>
+        </div>
+        
+        <div id="modal" class="w3-modal">
+          <div class="w3-modal-content">
+
+            <header class="w3-container w3-teal">
+                <span onclick="document.getElementById('modal').style.display='none'" class="w3-button w3-display-topright" style="font-size:30px">&times;</span>
+                <h2>Copiez l'URL et ajoutez-l&agrave; dans vos calendriers souscrits</h2>
+            </header>
+
+            <div class="w3-container w3-padding-16">
+                <textarea id="output.url" class="w3-input w3-border" type="text" style="height:40%">
+            </div>
+
+          </div>
+        </div>
+        
+    </body>
+</html>

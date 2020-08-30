@@ -10,7 +10,8 @@ let package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-log.git", Version("0.0.0") ..< Version("2.0.0")),
         .package(url: "https://github.com/valentindusollier/iCalKit.git", from: "0.0.3"),
-        .package(name: "PerfectHTTPServer", url: "https://github.com/PerfectlySoft/Perfect-HTTPServer.git", from: "3.0.0")
+        .package(name: "PerfectHTTPServer", url: "https://github.com/PerfectlySoft/Perfect-HTTPServer.git", from: "3.0.0"),
+        .package(name: "HTMLEntities", url: "https://github.com/IBM-Swift/swift-html-entities.git", from: "3.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -20,7 +21,7 @@ let package = Package(
             dependencies: [
                 "iCalKit",
                 "PerfectHTTPServer",
-                //"Logging",
+                "HTMLEntities",
                 .product(name: "Logging", package: "swift-log")
             ]
         ),
