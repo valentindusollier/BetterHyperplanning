@@ -6,4 +6,4 @@
 Exécutez le projet avec Swift. Pour cela, lisez la [documentation](https://swift.org/getting-started/).
 
 ## Générer l'URL
-Ouvrez `UI.html` et suivez les instructions.
+Téléchargez le projet et ouvrez `UI.html` et suivez les instructions.
