@@ -58,8 +58,7 @@ func format(summary: String) -> (code: String, title: String, type: String, isCa
 extension String {
     func isSubjectCode() -> Bool {
         let regex = "[A-Z]-[A-Z]{4}-[0-9]{3}"
-
-        let predicate = NSPredicate(format:"SELF MATCHES %@", regex)
-        return predicate.evaluate(with: self)
+        
+        return self.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
     }
 }
