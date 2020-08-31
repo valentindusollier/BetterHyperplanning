@@ -1,12 +1,21 @@
 <html>
     <head>
+        <script>
+            var remoteServer = null;
+        </script>
         <title>BetterHyperplanning</title>
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <script>
-            var remoteServer = "http://localhost:8000/";
             var url = null
             var subjects = null
+            
+            document.addEventListener("DOMContentLoaded", function(){
+                if (remoteServer == null) {
+                    console.log(document.body)
+                    document.getElementById("remoteServer.missing").style.display = "block"
+                }
+            });
             
             function encodeHTMLEntities(text) {
               return text.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
@@ -15,6 +24,9 @@
             }
             
             function updateSubjects() {
+                if (remoteServer == null) {
+                    return
+                }
                 document.getElementById("spinner").hidden = false
                 document.getElementById("container.subjects").hidden = true
                 document.getElementById("container.subjects.name").hidden = true
@@ -32,8 +44,8 @@
                           document.getElementById("subjects").innerHTML = ""
                           document.getElementById("subjects.name").innerHTML = ""
                           for (var code in subjects) {
-                              document.getElementById("subjects").innerHTML += "<li class=\"w3-display-container\"><input id=\"" + code + ".checkbox\" class=\"w3-check\" type=\"checkbox\" checked=\"checked\"><label>" + subjects[code] + "</label></li>"
-                              document.getElementById("subjects.name").innerHTML += "<li class=\"w3-display-container\"><label>" + subjects[code] + "</label><input id=\"" + code + ".name\" class=\"w3-input\" type=\"text\" placeholder=\"Nouveau nom\"></li>"
+                              document.getElementById("subjects").innerHTML += "<li class=\"w3-display-container\"><input id=\"" + code + ".checkbox\" class=\"w3-check\" type=\"checkbox\" checked=\"checked\" onclick=\"toggleSubjectName(event.srcElement.id);\"><label>" + subjects[code] + "</label></li>"
+                              document.getElementById("subjects.name").innerHTML += "<li id=\"" + code + ".subject\" class=\"w3-display-container\"><label>" + subjects[code] + "</label><input id=\"" + code + ".name\" class=\"w3-input\" type=\"text\" placeholder=\"Nouveau nom\"></li>"
                           }
                           document.getElementById("container.subjects").hidden = false
                           document.getElementById("container.subjects.name").hidden = false
@@ -65,6 +77,11 @@
                 document.getElementById("output.url").value = subscribedURL
                 document.getElementById("modal").style.display = "block"
             }
+        
+            function toggleSubjectName(id) {
+                let subjectID = id.replace(".checkbox", ".subject")
+                document.getElementById(subjectID).hidden = !document.getElementById(id).checked
+            }
         </script>
     </head>
     <body>
@@ -75,7 +92,7 @@
         </div>
         
         <div class="w3-container w3-animate-opacity">
-          <p>Placez ici l'URL iCal trouvable sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning de l'UMONS</a>.</p>
+            <p>Placez ici l'URL iCal trouvable sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning de l'UMONS (2019-2020)</a>. L'interface web d'hyperplanning 2020-2021 ne propose plus de g&eacute;n&eacute;rer l'URL iCal, cependant vous pouvez aller chercher celle de votre ann&eacute;e et option d'&eacute;tude sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning 2019-2020</a> et modifier &quot;https://hplanning2019.umons.ac.be/&quot; par &quot;https://hplanning2020.umons.ac.be/&quot;. Vous obtiendrez ainsi l'URL iCal 2020-2021.</p>
           <div class="w3-container w3-card-4 w3-padding-16">
               <label>URL</label>
               <input id="url" class="w3-input" type="text" onchange="updateSubjects();" onkeyup="if (event.keyCode == 13) {this.onchange();}" onpaste="this.onchange();">
@@ -100,13 +117,28 @@
         
         <div id="container.subjects.name" class="w3-container w3-animate-opacity w3-margin-bottom" hidden>
           <h2>Nom des cours</h2>
-          <p>Choissisez le nom de chaque cours.</p>
+          <p>Modfiez le nom des cours que vous souhaitez.</p>
           <ul id="subjects.name" class="w3-ul w3-card-4">
             <li class="w3-display-container">
                 <label>Subject name</label>
                 <input class="w3-input" type="text" placeholder="Nouveau nom">
             </li>
           </ul>
+        </div>
+        
+        <div id="remoteServer.missing" class="w3-modal">
+          <div class="w3-modal-content">
+
+            <header class="w3-container w3-teal">
+              <span onclick="document.getElementById('remoteServer.missing').style.display='none'" class="w3-button w3-display-topright" style="font-size:30px">&times;</span>
+              <h2>L'adresse du serveur est manquante</h2>
+            </header>
+
+            <div class="w3-container w3-padding-16">
+              Veuillez renseigner l'adresse du serveur, pour cela suivez les instructions de la section &quot;G&eacute;n&eacute;rer l'URL&quot; du README.md.
+            </div>
+
+          </div>
         </div>
         
         <div id="modal" class="w3-modal">
