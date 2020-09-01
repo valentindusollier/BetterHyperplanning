@@ -193,6 +193,14 @@ func getCalendar(_ opt_url: String?, response: HTTPResponse) -> iCalKit.Calendar
         return nil
     }
     
+    if !urlString.isHyperplanningURLFormat() {
+        let message = "The given url isn't a hyperplanning one..."
+        logger.error(Logger.Message(stringLiteral: message))
+        response.setBody(string: message)
+        response.completed(status: .preconditionFailed)
+        return nil
+    }
+    
     guard let url = URL(string: urlString) else {
         let message = "The given url isn't a well formated one..."
         logger.error(Logger.Message(stringLiteral: message))

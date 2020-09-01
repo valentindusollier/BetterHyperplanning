@@ -56,9 +56,15 @@ func format(summary: String) -> (code: String, title: String, type: String, isCa
 }
 
 extension String {
-    func isSubjectCode() -> Bool {
-        let regex = "[A-Z]-[A-Z]{4}-[0-9]{3}"
-        
+    func evaluate(regex: String) -> Bool {
         return self.range(of: regex, options: .regularExpression, range: nil, locale: nil) != nil
+    }
+    
+    func isSubjectCode() -> Bool {
+        return self.evaluate(regex: "[A-Z]-[A-Z]{4}-[0-9]{3}")
+    }
+    
+    func isHyperplanningURLFormat() -> Bool {
+        return self.contains(string: "https://hplanning")
     }
 }
