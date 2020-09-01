@@ -1,6 +1,10 @@
 import Logging
 import PerfectHTTPServer
 
+#if os(Linux)
+    import FoundationNetworking
+#endif
+
 fileprivate let logger = Logger(label: "root")
 
 logger.info("Initializing the server...")
