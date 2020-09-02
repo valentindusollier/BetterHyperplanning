@@ -10,6 +10,10 @@
             var url = null
             var subjects = null
             
+            if (!remoteServer.endsWith("/")) {
+                remoteServer += "/"
+            }
+            
             document.addEventListener("DOMContentLoaded", function(){
                 if (remoteServer == null) {
                     console.log(document.body)
