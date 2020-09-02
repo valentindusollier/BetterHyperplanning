@@ -10,7 +10,7 @@
             var url = null
             var subjects = null
             
-            if (!remoteServer.endsWith("/")) {
+            if (remoteServer != null && !remoteServer.endsWith("/")) {
                 remoteServer += "/"
             }
             
