@@ -31,13 +31,18 @@
                 if (remoteServer == null) {
                     return
                 }
-                document.getElementById("spinner").hidden = false
                 document.getElementById("container.subjects").hidden = true
                 document.getElementById("container.subjects.name").hidden = true
+                document.getElementById("error").hidden = true
                 document.getElementById("generate.button").disabled = true
                 subjects = null
                 
                 url = document.getElementById('url').value
+                if (url == "") {
+                    return
+                }
+                
+                document.getElementById("spinner").hidden = false
                 
                 var xmlhttp = new XMLHttpRequest();
                 xmlhttp.onreadystatechange = function() {
@@ -54,6 +59,9 @@
                           document.getElementById("container.subjects").hidden = false
                           document.getElementById("container.subjects.name").hidden = false
                           document.getElementById("generate.button").disabled = false
+                      } else {
+                          document.getElementById("error").innerHTML = "Erreur " + this.status + ((this.responseText != "") ? ": " + this.responseText : "")
+                          document.getElementById("error").hidden = false
                       }
                       document.getElementById("spinner").hidden = true
                   }
@@ -106,6 +114,10 @@
         
         <div id="spinner" class="w3-container w3-center w3-padding-64" hidden>
             <i class="fa fa-spinner w3-spin" style="font-size:32px"></i>
+        </div>
+        
+        <div id="error" class="w3-container w3-center w3-padding-64" style="color:red" hidden>
+            Erreur
         </div>
         
         <div id="container.subjects" class="w3-container w3-animate-opacity" hidden>

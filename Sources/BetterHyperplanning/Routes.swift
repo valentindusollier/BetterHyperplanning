@@ -221,7 +221,7 @@ func getCalendar(_ opt_url: String?, response: HTTPResponse) -> iCalKit.Calendar
     }
     
     guard let rawCalendar = loadedCalendar else {
-        let message = "The content of the given url must contain one iCal Calendar..."
+        let message = "The content of the given url must contain at least one iCal Calendar..."
         logger.error(Logger.Message(stringLiteral: message))
         response.setBody(string: message)
         response.completed(status: .notFound)
