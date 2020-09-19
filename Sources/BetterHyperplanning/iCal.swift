@@ -16,6 +16,59 @@ func loadCalendar(byURL url: URL) throws -> iCalKit.Calendar? {
     return calendars.first
 }
 
+func format(description: String) -> (isCancelled: Bool, code: String, title: String, salle: String?, type: String, memo: String?, td: String?, others : [String: String])? {
+    let lines = description.components(separatedBy: "\\n")
+    let splittedLines = lines.map { str -> (key: String, value: String)? in
+        if let range = str.range(of: " : ") {
+            let key = String(str[..<range.lowerBound])
+            let value = String(str[range.upperBound...])
+            return (key, value)
+        }
+        return nil
+    }
+    
+    var isCancelled = false
+    var code: String? = nil
+    var title: String? = nil
+    var salle: String? = nil
+    var type: String? = nil
+    var memo: String? = nil
+    var td: String? = nil
+    var others = [String: String]()
+    
+    for splittedLine in splittedLines {
+        guard let (key, value) = splittedLine else {
+            continue
+        }
+        switch key {
+        case "ANNULÉ":
+            isCancelled = true
+        case "Matière":
+            guard let range = value.range(of: " - ") else {
+                continue
+            }
+            code = String(value.prefix(upTo: range.lowerBound))
+            title = String(value.suffix(from: range.upperBound))
+        case "Salle":
+            salle = value
+        case "Type":
+            type = value
+        case "Mémo":
+            memo = value
+        case "TD":
+            td = value
+        default:
+            others[key] = value
+        }
+    }
+    
+    if code == nil || title == nil || type == nil {
+        return nil
+    }
+    
+    return (isCancelled: isCancelled, code: code!, title: title!, salle: salle, type: type!, memo: memo, td: td, others : others)
+}
+
 func format(summary: String) -> (code: String, title: String, type: String, isCanceled: Bool, subjectPublic: [String])? {
     var summary = summary
     var isCanceled = false
