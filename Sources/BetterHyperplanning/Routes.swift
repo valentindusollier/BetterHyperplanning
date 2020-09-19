@@ -82,27 +82,27 @@ let calendarRoute = Route(method: .get, uri: "/", handler: { request, response i
         if subComponent is Event {
             let event = subComponent as! Event
             
-            guard let summary = event.summary else {
+            guard let description = event.descr else {
                 events.append(event)
                 continue
             }
             
-            guard let formatedSummary = format(summary: summary) else {
+            guard let formatedDescription = format(description: description) else {
                 events.append(event)
                 continue
             }
             
-            let code = formatedSummary.code
+            let code = formatedDescription.code
             
             if !ignoreCodes.contains(code) {
-                let title = subjectsDictionnary[code] ?? formatedSummary.title
+                let title = subjectsDictionnary[code] ?? formatedDescription.title
                 
                 events.append(Event(uid: event.uid,
                                     dtstamp: event.dtend,
                                     location: event.location,
-                                    summary: "\(title) - \(formatedSummary.type)",
+                                    summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "") - \(formatedDescription.type)",
                                     descr: event.descr,
-                                    isCancelled: formatedSummary.isCanceled,
+                                    isCancelled: formatedDescription.isCancelled,
                                     dtstart: event.dtstart,
                                     dtend: event.dtend))
             }
