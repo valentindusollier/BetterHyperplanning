@@ -7,19 +7,12 @@
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <script>
-            var url = null
-            var subjects = null
+            var calendarInfos = {};
             
+            // Add "/" to remoteServer to prevent further errors.
             if (remoteServer != null && !remoteServer.endsWith("/")) {
                 remoteServer += "/"
             }
-            
-            document.addEventListener("DOMContentLoaded", function(){
-                if (remoteServer == null) {
-                    console.log(document.body)
-                    document.getElementById("remoteServer.missing").style.display = "block"
-                }
-            });
             
             function encodeHTMLEntities(text) {
               return text.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
@@ -27,67 +20,161 @@
               });
             }
             
-            function updateSubjects() {
+            // Tabs handling
+            var idCounter = 1;
+            
+            function changeTab(id) {
+                // Hide every tab
+                let tabs = document.getElementById("tab").childNodes;
+
+                for (tab of tabs) {
+                    if (tab.style) {
+                        tab.style.display = "none";
+                    }
+                }
+                
+                // Uncolor every tab button
+                let buttons = document.getElementById("tab.buttons").childNodes;
+                
+                // Hide every tab
+                for (button of buttons) {
+                    if (button.style) {
+                        button.style.backgroundColor = null;
+                    }
+                }
+                
+                let selectedTab = document.getElementById(`calendar.${id}`);
+                selectedTab.style.display = "block";
+                
+                document.getElementById(`tab.button.${id}`).style.backgroundColor = "#d1d1d1";
+            }
+        
+            function newTab() {
+                let tabButtonTemplate = document.getElementById("tab.button.template").cloneNode(true);
+                let calendarTemplate = document.getElementById("calendar.template").cloneNode(true);
+                
+                tabButtonTemplate.style.display = "block";
+                tabButtonTemplate.setAttribute('onclick', `changeTab(${idCounter})`);
+                tabButtonTemplate.id = `tab.button.${idCounter}`;
+                tabButtonTemplate.innerHTML = `Calendrier ${idCounter}`;
+                
+                calendarTemplate.id = `calendar.${idCounter}`;
+                let calendarTemplateOuterHTML = calendarTemplate.outerHTML.replace("url", `url.${idCounter}`)
+                    .replace("spinner", `spinner.${idCounter}`)
+                    .replace("error", `error.${idCounter}`)
+                    .replace("container.subjects", `container.subjects.${idCounter}`)
+                    .replace("container.subjects.name", `container.subjects.name.${idCounter}`)
+                    .replace("id=\"subjects", `id=\"subjects.${idCounter}`)
+                    .replace("id=\"subjects.name", `id=\"subjects.name.${idCounter}`)
+                    .replace("updateSubjects()", `updateSubjects(${idCounter})`);
+                
+                document.getElementById("tab.buttons").innerHTML += tabButtonTemplate.outerHTML;
+                document.getElementById("tab").innerHTML += calendarTemplateOuterHTML;
+                
+                calendarInfos[idCounter] = {};
+                changeTab(idCounter++);
+            }
+        
+            document.addEventListener("DOMContentLoaded", function(){
+                // Create first tab
+                newTab();
+                
+                // Warn user if the remoteServer variable is null.
                 if (remoteServer == null) {
-                    return
+                    document.getElementById("remoteServer.missing").style.display = "block"
                 }
-                document.getElementById("container.subjects").hidden = true
-                document.getElementById("container.subjects.name").hidden = true
-                document.getElementById("error").hidden = true
-                document.getElementById("generate.button").disabled = true
-                subjects = null
-                
-                url = document.getElementById('url').value
-                if (url == "") {
-                    return
+            });
+            
+            function updateSubjects(id) {
+                if (remoteServer == null) {
+                    return;
                 }
                 
-                document.getElementById("spinner").hidden = false
+                let calendarInfo = calendarInfos[id];
+                
+                document.getElementById(`container.subjects.${id}`).style.display = "none";
+                document.getElementById(`container.subjects.name.${id}`).style.display = "none";
+                document.getElementById(`error.${id}`).style.display = "none";
+                document.getElementById("generate.button").disabled = true;
+                
+                calendarInfo.url = document.getElementById(`url.${id}`).value
+                if (calendarInfo.url == "") {
+                    return
+                }
+                
+                document.getElementById(`spinner.${id}`).style.display = "block";
                 
                 var xmlhttp = new XMLHttpRequest();
                 xmlhttp.onreadystatechange = function() {
+                  // Check if the request is done.
                   if (this.readyState == 4) {
                       if (this.status == 200) {
-                          subjects = JSON.parse(this.responseText);
+                          calendarInfo.subjects = JSON.parse(this.responseText);
                           
-                          document.getElementById("subjects").innerHTML = ""
-                          document.getElementById("subjects.name").innerHTML = ""
-                          for (var code in subjects) {
-                              document.getElementById("subjects").innerHTML += "<li class=\"w3-display-container\"><input id=\"" + code + ".checkbox\" class=\"w3-check\" type=\"checkbox\" checked=\"checked\" onclick=\"toggleSubjectName(event.srcElement.id);\"><label>" + subjects[code] + "</label></li>"
-                              document.getElementById("subjects.name").innerHTML += "<li id=\"" + code + ".subject\" class=\"w3-display-container\"><label>" + subjects[code] + "</label><input id=\"" + code + ".name\" class=\"w3-input\" type=\"text\" placeholder=\"Nouveau nom\"></li>"
+                          document.getElementById(`subjects.${id}`).innerHTML = "";
+                          document.getElementById(`subjects.name.${id}`).innerHTML = "";
+                          for (var code in calendarInfo.subjects) {
+                              document.getElementById(`subjects.${id}`).innerHTML += "<li class=\"w3-display-container\"><input id=\"" + code + ".checkbox." + id + "\" class=\"w3-check\" type=\"checkbox\" checked=\"checked\" onclick=\"toggleSubjectName(event.srcElement.id);\"><label>" + calendarInfo.subjects[code] + "</label></li>";
+                              document.getElementById(`subjects.name.${id}`).innerHTML += "<li id=\"" + code + ".subject." + id + "\" class=\"w3-display-container\"><label>" + calendarInfo.subjects[code] + "</label><input id=\"" + code + ".name." + id + "\" class=\"w3-input\" type=\"text\" placeholder=\"Nouveau nom\"></li>";
                           }
-                          document.getElementById("container.subjects").hidden = false
-                          document.getElementById("container.subjects.name").hidden = false
-                          document.getElementById("generate.button").disabled = false
+                          document.getElementById(`container.subjects.${id}`).style.display = "block";
+                          document.getElementById(`container.subjects.name.${id}`).style.display = "block";
+                          document.getElementById("generate.button").disabled = false;
                       } else {
-                          document.getElementById("error").innerHTML = "Erreur " + this.status + ((this.responseText != "") ? ": " + this.responseText : "")
-                          document.getElementById("error").hidden = false
+                          document.getElementById(`error.${id}`).innerHTML = "Erreur " + this.status + ((this.responseText != "") ? ": " + this.responseText : "");
+                          document.getElementById(`error.${id}`).style.display = "block";
                       }
-                      document.getElementById("spinner").hidden = true
+                      document.getElementById(`spinner.${id}`).style.display = "none";
                   }
                 };
-                xmlhttp.open("GET", remoteServer + "subjects/?url=" + escape(url), true);
+                xmlhttp.open("GET", remoteServer + "subjects/?url=" + escape(calendarInfo.url));
                 xmlhttp.send();
             }
         
-            function setupModal() {
-                var ignore = []
-                var subjectsName = {}
+            function generateURL() {
                 
-                for (var code in subjects) {
-                    if (!document.getElementById(code + ".checkbox").checked) {
-                        ignore.push(code)
-                    }
+                document.getElementById("modal").style.display = "block";
+                
+                document.getElementById(`modal.spinner`).style.display = "block";
+                document.getElementById(`modal.error`).style.display = "none";
+                document.getElementById(`modal.output`).style.display = "none";
+                
+                let preference = [];
+                
+                for (id in calendarInfos) {
+                    let calendarInfo = calendarInfos[id];
+                    let ignore = []
+                    var subjects = {};
                     
-                    if (document.getElementById(code + ".name").value != "") {
-                        subjectsName[code] = encodeHTMLEntities(document.getElementById(code + ".name").value)
+                    for (var code in calendarInfo.subjects) {
+                        if (!document.getElementById(`${code}.checkbox.${id}`).checked) {
+                            ignore.push(code);
+                        }
+                        
+                        if (document.getElementById(`${code}.name.${id}`).value != "") {
+                            subjects[code] = encodeHTMLEntities(document.getElementById(`${code}.name.${id}`).value);
+                        }
+                        
                     }
+                    preference.push({"url": calendarInfo.url, "ignore": ignore, "subjects": subjects});
                 }
                 
-                var subscribedURL = remoteServer + "?url=" + escape(url) + (ignore.length != 0 ? "&ignore=" + escape(JSON.stringify(ignore)) : "") + (Object.keys(subjectsName).length != 0 ? "&subjects=" + escape(JSON.stringify(subjectsName)) : "")
-                
-                document.getElementById("output.url").value = subscribedURL
-                document.getElementById("modal").style.display = "block"
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() {
+                  // Check if the request is done.
+                  if (this.readyState == 4) {
+                      if (this.status == 200) {
+                          document.getElementById("modal.output.url").value = `${remoteServer}v2/?preferenceID=${this.responseText}`;
+                          document.getElementById(`modal.output`).style.display = "block";
+                      } else {
+                          document.getElementById(`modal.error`).innerHTML = "Erreur " + this.status + ((this.responseText != "") ? ": " + this.responseText : "");
+                          document.getElementById(`modal.error`).style.display = "block";
+                      }
+                      document.getElementById(`modal.spinner`).style.display = "none";
+                  }
+                };
+                xmlhttp.open("POST", remoteServer + "register/");
+                xmlhttp.send(JSON.stringify(preference));
             }
         
             function toggleSubjectName(id) {
@@ -98,50 +185,68 @@
     </head>
     <body>
         
-        <div class="w3-bar w3-border w3-light-grey w3-large">
+        <!-- Navigation bar -->
+        <div class="w3-bar w3-light-grey w3-large">
           <a class="w3-bar-item">BetterHyperplanning</a>
-          <button id="generate.button" class="w3-bar-item w3-button w3-green w3-right" onclick="setupModal()" disabled>G&eacute;n&eacute;rer l'URL</button>
+          <button id="generate.button" class="w3-bar-item w3-button w3-green w3-right" onclick="generateURL()" disabled>G&eacute;n&eacute;rer l'URL</button>
         </div>
         
-        <div class="w3-container w3-animate-opacity">
-            <p>Placez ici l'URL iCal trouvable sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning de l'UMONS (2019-2020)</a>. L'interface web d'hyperplanning 2020-2021 ne propose plus de g&eacute;n&eacute;rer l'URL iCal, cependant vous pouvez aller chercher celle de votre ann&eacute;e et option d'&eacute;tude sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning 2019-2020</a> et modifier &quot;https://hplanning2019.umons.ac.be/&quot; par &quot;https://hplanning2020.umons.ac.be/&quot;. Vous obtiendrez ainsi l'URL iCal 2020-2021.</p>
-          <div class="w3-container w3-card-4 w3-padding-16">
-              <label>URL</label>
-              <input id="url" class="w3-input" type="text" onchange="updateSubjects();" onkeyup="if (event.keyCode == 13) {this.onchange();}" onpaste="this.onchange();">
-          </div>
-          <p class="w3-small">Appuyez sur "Entrer" pour charger.</p>
+        <!-- Tabs bar -->
+        <div class="w3-bar w3-light-gray w3-border-bottom">
+            <div id="tab.buttons">
+                <button id="tab.button.template" class="w3-bar-item w3-button" style="display: none;">Calendrier Template</button>
+            </div>
+            <button class="w3-bar-item w3-button w3-green" onclick="newTab()">Ajouter un calendrier</button>
         </div>
         
-        <div id="spinner" class="w3-container w3-center w3-padding-64" hidden>
-            <i class="fa fa-spinner w3-spin" style="font-size:32px"></i>
+        <!-- Tabs div -->
+        <div id="tab">
+            <div id="calendar.template" style="display: none;">
+                <!-- Urls input -->
+                <div class="w3-container w3-animate-opacity">
+                    <p>Placez ici l'URL iCal trouvable sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning de l'UMONS (2019-2020)</a>. L'interface web d'hyperplanning 2020-2021 ne propose plus de g&eacute;n&eacute;rer l'URL iCal, cependant vous pouvez aller chercher celle de votre ann&eacute;e et option d'&eacute;tude sur l'<a href="https://hplanning2019.umons.ac.be/invite">hyperplanning 2019-2020</a> et modifier &quot;https://hplanning2019.umons.ac.be/&quot; par &quot;https://hplanning2020.umons.ac.be/&quot;. Vous obtiendrez ainsi l'URL iCal 2020-2021.</p>
+                  <div class="w3-container w3-card-4 w3-padding-16">
+                      <label>URL</label>
+                      <input id="url" class="w3-input" type="text" onchange="updateSubjects();" onkeyup="if (event.keyCode == 13) {this.onchange();}" onpaste="this.onchange();">
+                  </div>
+                  <p class="w3-small">Appuyez sur "Entrer" pour charger.</p>
+                </div>
+                
+                <!-- Spinner div -->
+                <div id="spinner" class="w3-container w3-center w3-padding-64" style="display: none;">
+                    <i class="fa fa-spinner w3-spin" style="font-size:32px"></i>
+                </div>
+                
+                <!-- Error div -->
+                <div id="error" class="w3-container w3-center w3-padding-64" style="color: red; display: none;">
+                    Erreur
+                </div>
+                
+                <div id="container.subjects" class="w3-container w3-animate-opacity" style="display: none;">
+                  <h2>Cours</h2>
+                  <p>S&eacute;l&eacute;ctionnez les cours auxquels vous participez.</p>
+                  <ul id="subjects" class="w3-ul w3-card-4">
+                    <li class="w3-display-container">
+                        <input class="w3-check" type="checkbox" checked="checked">
+                        <label>Subject</label>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div id="container.subjects.name" class="w3-container w3-animate-opacity w3-margin-bottom" style="display: none;">
+                  <h2>Nom des cours</h2>
+                  <p>Modfiez le nom des cours que vous souhaitez.</p>
+                  <ul id="subjects.name" class="w3-ul w3-card-4">
+                    <li class="w3-display-container">
+                        <label>Subject name</label>
+                        <input class="w3-input" type="text" placeholder="Nouveau nom">
+                    </li>
+                  </ul>
+                </div>
+            </div>
         </div>
         
-        <div id="error" class="w3-container w3-center w3-padding-64" style="color:red" hidden>
-            Erreur
-        </div>
-        
-        <div id="container.subjects" class="w3-container w3-animate-opacity" hidden>
-          <h2>Cours</h2>
-          <p>S&eacute;l&eacute;ctionnez les cours auxquels vous participez.</p>
-          <ul id="subjects" class="w3-ul w3-card-4">
-            <li class="w3-display-container">
-                <input class="w3-check" type="checkbox" checked="checked">
-                <label>Subject</label>
-            </li>
-          </ul>
-        </div>
-        
-        <div id="container.subjects.name" class="w3-container w3-animate-opacity w3-margin-bottom" hidden>
-          <h2>Nom des cours</h2>
-          <p>Modfiez le nom des cours que vous souhaitez.</p>
-          <ul id="subjects.name" class="w3-ul w3-card-4">
-            <li class="w3-display-container">
-                <label>Subject name</label>
-                <input class="w3-input" type="text" placeholder="Nouveau nom">
-            </li>
-          </ul>
-        </div>
-        
+        <!-- remoteServer missing warning -->
         <div id="remoteServer.missing" class="w3-modal">
           <div class="w3-modal-content">
 
@@ -157,6 +262,7 @@
           </div>
         </div>
         
+        <!-- Generated url popup -->
         <div id="modal" class="w3-modal">
           <div class="w3-modal-content">
 
@@ -164,9 +270,19 @@
                 <span onclick="document.getElementById('modal').style.display='none'" class="w3-button w3-display-topright" style="font-size:30px">&times;</span>
                 <h2>Copiez l'URL et ajoutez-la dans vos calendriers souscrits</h2>
             </header>
-
-            <div class="w3-container w3-padding-16">
-                <textarea id="output.url" class="w3-input w3-border" type="text" style="height:40%">
+            
+            <!-- Spinner div -->
+            <div id="modal.spinner" class="w3-container w3-center w3-padding-64" style="display: block;">
+                <i class="fa fa-spinner w3-spin" style="font-size:32px"></i>
+            </div>
+            
+            <!-- Error div -->
+            <div id="modal.error" class="w3-container w3-center w3-padding-64" style="color: red; display: none;">
+                Erreur
+            </div>
+            
+            <div id="modal.output" class="w3-container w3-padding-16" style="display: none;">
+                <textarea id="modal.output.url" class="w3-input w3-border" type="text" style="height:40%"></textarea>
             </div>
 
           </div>

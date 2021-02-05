@@ -5,3 +5,5 @@
 xcuserdata/
 Package.resolved
 .swiftpm/
+config.plist
+preferences.json
