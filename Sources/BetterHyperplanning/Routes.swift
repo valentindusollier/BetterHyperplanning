@@ -18,18 +18,38 @@ let deprecatedCalendarRoute = Route(method: .get, uri: "/", handler: { request, 
     
     iCalLogger.info("Depracted request with \(request.uri)")
     
-    guard let url = request.param(name: "url"),
-          let ignore = request.param(name: "ignore")?.data(using: .utf8),
-          let subjects = request.param(name: "subjects")?.data(using: .utf8) else {
-        response.closeWithError(message(fromError: .missParameters(parameters: ["url", "ignore", "subjects"])))
+    guard let url = request.param(name: "url") else {
+        response.closeWithError(message(fromError: .missParameters(parameters: ["url"])))
         return
     }
     
+    
+    let jsonDecoder = JSONDecoder()
+    var ignore = [String]()
+    var subjects = [String: String]()
+    
+    if let ignoreParam = request.param(name: "ignore")?.data(using: .utf8) {
+        do {
+            ignore = try jsonDecoder.decode([String].self, from: ignoreParam)
+        } catch {
+            response.closeWithError("The following error happened : \(error)", status: .internalServerError)
+            return
+        }
+    }
+    
+    if let subjectsParam = request.param(name: "subjects")?.data(using: .utf8) {
+        do {
+            subjects = try jsonDecoder.decode([String: String].self, from: subjectsParam)
+        } catch {
+            response.closeWithError("The following error happened : \(error)", status: .internalServerError)
+            return
+        }
+    }
+    
     do {
-        let jsonDecoder = JSONDecoder()
         let preference = [CalendarPreference(url: url,
-                                             ignore: try jsonDecoder.decode([String].self, from: ignore),
-                                             subjects: try jsonDecoder.decode([String: String].self, from: subjects))]
+                                             ignore: ignore,
+                                             subjects: subjects)]
         let calendar = try buildCalendar(withPreference: preference)
         response.setBody(string: calendar.toCal())
         response.completed(status: .ok)
