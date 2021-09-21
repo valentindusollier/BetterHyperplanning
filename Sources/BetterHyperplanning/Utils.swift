@@ -19,6 +19,8 @@ public enum CalendarError: Error {
     case badPreferenceID
     case notValideRegisterBody
     case registerFailed(error: Error)
+    case cannotDownloadCalendar(reason: String)
+    case cannotDecodeData
 }
 
 public func message(fromError error: CalendarError) -> (message: String, status: HTTPResponseStatus) {
@@ -39,33 +41,66 @@ public func message(fromError error: CalendarError) -> (message: String, status:
         return ("The register body is not valid...", .preconditionFailed)
     case .registerFailed(let error):
         return ("The register failed : \(error)", .internalServerError)
+    case .cannotDownloadCalendar(let reason):
+        return ("Cannot download calendar: \(reason)", .internalServerError)
+    case .cannotDecodeData:
+        return ("Cannot decode data", .internalServerError)
     }
 }
 
-public func loadCalendar(url urlString: String) throws -> iCalKit.Calendar {
+public func loadCalendar(url: String) throws -> iCalKit.Calendar {
     // Parsing URL and loading Calendar
     
-    if !urlString.isHyperplanningURLFormat() {
+    if !url.isHyperplanningURLFormat() {
         throw CalendarError.notHyperplanningURL
     }
     
-    guard let url = URL(string: urlString) else {
-        throw CalendarError.badFormattedURL
-    }
-    
-    var calendars: [iCalKit.Calendar]
+    let calendarsString: String
     
     do {
-        calendars = try iCal.load(url: url)
+        calendarsString = try downloadCalendar(url)
     } catch {
         throw CalendarError.coding(error: error)
     }
+    
+    let calendars: [iCalKit.Calendar] = iCal.load(string: calendarsString)
     
     guard let calendar = calendars.first else {
         throw CalendarError.emptyiCalCalendar
     }
     
     return calendar
+}
+
+public func downloadCalendar(_ urlString: String) throws -> String {
+    let task = Process()
+    #if os(Linux)
+    task.launchPath = "/usr/bin/wget"
+    #else
+    task.launchPath = "/usr/local/bin/wget"
+    #endif
+    task.arguments = [urlString, "-q", "-O", "-"]
+    
+    let outputPipe = Pipe()
+    let errorPipe = Pipe()
+
+    task.standardOutput = outputPipe
+    task.standardError = errorPipe
+    
+    task.launch()
+    
+    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+    
+    task.waitUntilExit()
+    
+    if (task.terminationStatus == 0) {
+        guard let output = String(data: outputData, encoding: .utf8) else { throw CalendarError.cannotDecodeData }
+        return output
+    } else {
+        guard let error = String(data: errorData, encoding: .utf8) else { throw CalendarError.cannotDecodeData }
+        throw CalendarError.cannotDownloadCalendar(reason: error)
+    }
 }
 
 public func buildCalendar(withPreference preference: Preference) throws -> iCalKit.Calendar {
