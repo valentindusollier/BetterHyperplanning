@@ -132,11 +132,12 @@ public func buildCalendar(withPreference preference: Preference) throws -> iCalK
                 
                 if !calendarPreference.ignore.contains(code) {
                     let title = subjectsDictionnary[code] ?? formatedDescription.title
+                    let type = formatedDescription.type != nil ? " - \(formatedDescription.type!)" : ""
                     
                     events.append(Event(uid: event.uid,
                                         dtstamp: event.dtend,
                                         location: event.location,
-                                        summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "") - \(formatedDescription.type)",
+                                        summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "")\(type)",
                                         descr: event.descr,
                                         isCancelled: formatedDescription.isCancelled,
                                         dtstart: event.dtstart,
@@ -163,7 +164,7 @@ extension HTTPResponse {
     }
 }
 
-public func format(description: String) -> (isCancelled: Bool, code: String, title: String, salle: String?, type: String, memo: String?, td: String?, others : [String: String])? {
+public func format(description: String) -> (isCancelled: Bool, code: String, title: String, salle: String?, type: String?, memo: String?, td: String?, others : [String: String])? {
     let lines = description.components(separatedBy: "\\n")
     let splittedLines = lines.map { str -> (key: String, value: String)? in
         if let range = str.range(of: " : ") {
@@ -194,7 +195,10 @@ public func format(description: String) -> (isCancelled: Bool, code: String, tit
             guard let range = value.range(of: " - ") else {
                 continue
             }
-            code = String(value.prefix(upTo: range.lowerBound))
+            let potentialCode = String(value.prefix(upTo: range.lowerBound))
+            if (potentialCode.isSubjectCode()) {
+                code = potentialCode
+            }
             title = String(value.suffix(from: range.upperBound))
         case "Salle":
             salle = value
@@ -209,11 +213,11 @@ public func format(description: String) -> (isCancelled: Bool, code: String, tit
         }
     }
     
-    if code == nil || title == nil || type == nil {
+    if code == nil || title == nil {
         return nil
     }
     
-    return (isCancelled: isCancelled, code: code!, title: title!, salle: salle, type: type!, memo: memo, td: td, others : others)
+    return (isCancelled: isCancelled, code: code!, title: title!, salle: salle, type: type, memo: memo, td: td, others : others)
 }
 
 extension String {
