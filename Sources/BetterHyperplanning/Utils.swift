@@ -103,7 +103,7 @@ public func downloadCalendar(_ urlString: String) throws -> String {
     }
 }
 
-public func buildCalendar(withPreference preference: Preference) throws -> iCalKit.Calendar {
+public func buildCalendar(withPreference preference: Preference, ignoreDuplicates: Bool) throws -> iCalKit.Calendar {
     var events = [Event]()
     
     for calendarPreference in preference {
@@ -119,12 +119,16 @@ public func buildCalendar(withPreference preference: Preference) throws -> iCalK
                 let event = subComponent as! Event
                 
                 guard let description = event.descr else {
-                    events.append(event)
+                    if (!(ignoreDuplicates && events.exists(event: event))) {
+                        events.append(event)
+                    }
                     continue
                 }
                 
                 guard let formatedDescription = format(description: description) else {
-                    events.append(event)
+                    if (!(ignoreDuplicates && events.exists(event: event))) {
+                        events.append(event)
+                    }
                     continue
                 }
                 
@@ -134,14 +138,18 @@ public func buildCalendar(withPreference preference: Preference) throws -> iCalK
                     let title = subjectsDictionnary[code] ?? formatedDescription.title
                     let type = formatedDescription.type != nil ? " - \(formatedDescription.type!)" : ""
                     
-                    events.append(Event(uid: event.uid,
-                                        dtstamp: event.dtend,
-                                        location: event.location,
-                                        summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "")\(type)",
-                                        descr: event.descr,
-                                        isCancelled: formatedDescription.isCancelled,
-                                        dtstart: event.dtstart,
-                                        dtend: event.dtend))
+                    let event = Event(uid: event.uid,
+                                      dtstamp: event.dtend,
+                                      location: event.location,
+                                      summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "")\(type)",
+                                      descr: event.descr,
+                                      isCancelled: formatedDescription.isCancelled,
+                                      dtstart: event.dtstart,
+                                      dtend: event.dtend)
+                    
+                    if (!(ignoreDuplicates && events.exists(event: event))) {
+                        events.append(event)
+                    }
                 }
                 
             }
@@ -231,5 +239,33 @@ extension String {
     
     func isHyperplanningURLFormat() -> Bool {
         return self.contains(string: "https://hplanning")
+    }
+}
+
+//events.append(Event(uid: event.uid,
+//                    dtstamp: event.dtend,
+//                    location: event.location,
+//                    summary: "\(title)\(formatedDescription.memo != nil ? " - \(formatedDescription.memo!)" : "")\(type)",
+//                    descr: event.descr,
+//                    isCancelled: formatedDescription.isCancelled,
+//                    dtstart: event.dtstart,
+//                    dtend: event.dtend))
+
+extension Event {
+    func isSameAs(event: Event) -> Bool {
+        return self.location == event.location &&
+                self.summary == event.summary &&
+                self.descr == event.descr &&
+                self.isCancelled == event.isCancelled &&
+                self.dtend == event.dtend
+    }
+}
+
+extension Array where Element == Event {
+    func exists(event: Event) -> Bool {
+        let sameEvents = self.filter { ev in
+            return ev.isSameAs(event: event)
+        }
+        return sameEvents.count != 0
     }
 }

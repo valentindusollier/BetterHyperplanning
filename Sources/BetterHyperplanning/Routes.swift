@@ -23,7 +23,6 @@ let deprecatedCalendarRoute = Route(method: .get, uri: "/", handler: { request, 
         return
     }
     
-    
     let jsonDecoder = JSONDecoder()
     var ignore = [String]()
     var subjects = [String: String]()
@@ -50,7 +49,7 @@ let deprecatedCalendarRoute = Route(method: .get, uri: "/", handler: { request, 
         let preference = [CalendarPreference(url: url,
                                              ignore: ignore,
                                              subjects: subjects)]
-        let calendar = try buildCalendar(withPreference: preference)
+        let calendar = try buildCalendar(withPreference: preference, ignoreDuplicates: false)
         response.setBody(string: calendar.toCal())
         response.completed(status: .ok)
     } catch {
@@ -63,6 +62,8 @@ let deprecatedCalendarRoute = Route(method: .get, uri: "/", handler: { request, 
 })
 
 let calendarRoute = Route(method: .get, uri: "/v2/", handler: { request, response in
+    
+    let ignoreDuplicates = request.param(name: "ignoreDuplicates") != nil
     
     guard let preferenceID = request.param(name: "preferenceID") else {
         response.closeWithError(message(fromError: .missParameters(parameters: ["preferenceID"])))
@@ -78,7 +79,7 @@ let calendarRoute = Route(method: .get, uri: "/v2/", handler: { request, respons
     iCalLogger.info("New request for \(preferenceUUID) preference.")
     
     do {
-        let calendar = try buildCalendar(withPreference: preference)
+        let calendar = try buildCalendar(withPreference: preference, ignoreDuplicates: ignoreDuplicates)
         response.setBody(string: calendar.toCal())
         response.completed(status: .ok)
     } catch {
